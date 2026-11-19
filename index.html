@@ -1,4 +1,3 @@
-# SWIFT-SCORE
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -77,6 +76,38 @@
                         <input type="date" id="dataAlta" name="dataAlta" required 
                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-base
                             dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                </div>
+                
+                <!-- Destino do paciente após a alta da UTI -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Destino do paciente após a alta da UTI</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div>
+                            <input type="radio" id="destino1" name="destino" value="Enfermaria" required
+                                class="w-4 h-4 text-primary focus:ring-primary">
+                            <label for="destino1" class="ml-2">Enfermaria</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="destino2" name="destino" value="Outra UTI"
+                                class="w-4 h-4 text-primary focus:ring-primary">
+                            <label for="destino2" class="ml-2">Outra UTI</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="destino3" name="destino" value="Semi-Intensiva"
+                                class="w-4 h-4 text-primary focus:ring-primary">
+                            <label for="destino3" class="ml-2">Semi-Intensiva</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="destino4" name="destino" value="Alta Hospitalar"
+                                class="w-4 h-4 text-primary focus:ring-primary">
+                            <label for="destino4" class="ml-2">Alta Hospitalar</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="destino5" name="destino" value="Transferência Hospitalar"
+                                class="w-4 h-4 text-primary focus:ring-primary">
+                            <label for="destino5" class="ml-2">Transferência Hospitalar</label>
+                        </div>
                     </div>
                 </div>
                 
@@ -238,11 +269,12 @@
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Registro</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Score</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Risco</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Destino</th>
                         </tr>
                     </thead>
                     <tbody id="patientTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         <tr>
-                            <td colspan="4" class="px-4 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                            <td colspan="5" class="px-4 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                                 Nenhum paciente registrado
                             </td>
                         </tr>
@@ -468,7 +500,7 @@
                 e.preventDefault();
                 
                 // Verificar se todos os campos obrigatórios foram preenchidos
-                const requiredGroups = ['procedencia', 'permanencia', 'pao2', 'glasgow', 'paco2'];
+                const requiredGroups = ['destino', 'procedencia', 'permanencia', 'pao2', 'glasgow', 'paco2'];
                 let allValid = true;
                 
                 for (let group of requiredGroups) {
@@ -503,6 +535,7 @@
                     registro: document.getElementById('registro').value,
                     dataInternacao: document.getElementById('dataInternacao').value,
                     dataAlta: document.getElementById('dataAlta').value,
+                    destino: document.querySelector('input[name="destino"]:checked').value,
                     procedencia: document.querySelector('input[name="procedencia"]:checked').value,
                     permanencia: document.querySelector('input[name="permanencia"]:checked').value,
                     pao2: document.querySelector('input[name="pao2"]:checked').value,
@@ -534,13 +567,13 @@
                 }
                 
                 // Criar cabeçalho do CSV
-                let csv = 'Nome,Registro,Data Internação,Data Alta,Procedência,Permanência,PaO2/FiO2,Glasgow,PaCO2,Score,Risco\n';
+                let csv = 'Nome,Registro,Data Internação,Data Alta,Procedência,Permanência,PaO2/FiO2,Glasgow,PaCO2,Score,Risco,Destino\n';
                 
                 // Adicionar cada paciente
                 patients.forEach(patient => {
                     csv += `"${patient.nome}","${patient.registro}","${patient.dataInternacao}","${patient.dataAlta}",` +
                            `"${patient.procedencia}","${patient.permanencia}","${patient.pao2}","${patient.glasgow}",` +
-                           `"${patient.paco2}","${patient.score}","${patient.risco}"\n`;
+                           `"${patient.paco2}","${patient.score}","${patient.risco}","${patient.destino || ''}"\n`;
                 });
                 
                 // Criar e baixar o arquivo
@@ -606,7 +639,8 @@
                                     glasgow: fields[7],
                                     paco2: fields[8],
                                     score: parseInt(fields[9]),
-                                    risco: fields[10]
+                                    risco: fields[10],
+                                    destino: fields[11] || ''
                                 });
                             }
                         }
@@ -621,12 +655,17 @@
                 reader.readAsText(file);
             });
             
+            // Escapar texto antes de inserir no HTML
+            function escapeHTML(s) {
+                return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            }
+            
             // Atualizar tabela de pacientes
             function updateTable() {
                 if (patients.length === 0) {
                     tableBody.innerHTML = `
                         <tr>
-                            <td colspan="4" class="px-4 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                            <td colspan="5" class="px-4 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                                 Nenhum paciente registrado
                             </td>
                         </tr>
@@ -662,6 +701,7 @@
                                 ${patient.risco}
                             </span>
                         </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm">${escapeHTML(patient.destino || '—')}</td>
                     `;
                     tableBody.appendChild(row);
                 });
